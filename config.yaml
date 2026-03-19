@@ -1,0 +1,32 @@
+vault_path: ~/vault
+state_file: ~/scripts/state.json
+score_threshold: 10
+model: claude-sonnet-4-20250514
+
+sources:
+  geek_news:
+    url: https://news.hada.io/rss
+    type: rss
+    enabled: true
+  hacker_news:
+    url: https://hn.algolia.com/api/v1/search_by_date
+    type: api
+    min_points: 50
+    enabled: true
+  github_releases:
+    repos:
+      - anthropics/claude-code
+      - anthropics/anthropic-sdk-python
+    enabled: true
+  # TODO: X/Twitter
+  # twitter:
+  #   type: x_api
+  #   accounts: [DeepDive_KR]
+  #   enabled: false
+
+telegram:
+  # TELEGRAM_BOT_TOKEN, TELEGRAM_CHAT_ID from env
+  min_score: 12
+
+evaluation:
+  context: "Claude Code 파워유저, 풀스택 개발, 자동화/AI 코딩 도구에 관심"
