@@ -1,4 +1,4 @@
-vault_path: ~/vault
+vault_path: ~/sources/collect-insights/vault
 state_file: ~/scripts/state.json
 score_threshold: 10
 model: claude-sonnet-4-20250514
