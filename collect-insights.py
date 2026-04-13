@@ -327,6 +327,12 @@ def commit_and_push_vault(project_dir, vault_path, date_str):
         if stage_vault.returncode != 0:
             print(f"  [WARN] git add vault failed: {stage_vault.stderr.strip()}")
 
+        # Also stage wiki/ changes
+        wiki_dir = os.path.join(repo_dir, "wiki")
+        if os.path.exists(wiki_dir):
+            wiki_rel = os.path.relpath(wiki_dir, repo_dir)
+            run_git("add", wiki_rel)
+
         # Stage state.json
         stage_state = run_git("add", "state.json")
         if stage_state.returncode != 0:
@@ -452,6 +458,16 @@ def main():
     state["seen_ids"] = new_seen_ids
     state["last_run"] = datetime.now(timezone.utc).isoformat()
     save_state(state, state_path)
+
+    # Wiki synthesis
+    wiki_path = os.path.expanduser(config.get("wiki_path", str(script_dir / "wiki")))
+    if config.get("wiki_enabled", True) and saved_items:
+        try:
+            from wiki_ingest import ingest_items_into_wiki
+            ingest_items_into_wiki(saved_items, wiki_path, config, date_str)
+            print(f"  [WIKI] Synthesis complete for {len(saved_items)} items")
+        except Exception as e:
+            print(f"  [WARN] Wiki synthesis failed (non-fatal): {e}")
 
     commit_and_push_vault(script_dir, vault_path, date_str)
 

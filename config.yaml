@@ -2,6 +2,8 @@ vault_path: ~/sources/collect-insights/vault
 state_file: ~/sources/collect-insights/state.json
 score_threshold: 10
 model: claude-sonnet-4-20250514
+wiki_path: ~/sources/collect-insights/wiki
+wiki_enabled: true
 
 sources:
   geek_news:
