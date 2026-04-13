@@ -307,6 +307,58 @@ category: {category}
     return filepath
 
 
+def commit_and_push_vault(project_dir, vault_path, date_str):
+    """Stage vault/ and state.json, commit if changed, then push to origin."""
+    repo_dir = str(project_dir)
+
+    def run_git(*args, **kwargs):
+        return subprocess.run(
+            ["git", "-C", repo_dir] + list(args),
+            capture_output=True,
+            text=True,
+            timeout=30,
+            **kwargs,
+        )
+
+    try:
+        # Stage vault directory (relative path from repo root)
+        vault_rel = os.path.relpath(vault_path, repo_dir)
+        stage_vault = run_git("add", vault_rel)
+        if stage_vault.returncode != 0:
+            print(f"  [WARN] git add vault failed: {stage_vault.stderr.strip()}")
+
+        # Stage state.json
+        stage_state = run_git("add", "state.json")
+        if stage_state.returncode != 0:
+            print(f"  [WARN] git add state.json failed: {stage_state.stderr.strip()}")
+
+        # Check if there are staged changes
+        diff_check = run_git("diff", "--cached", "--quiet")
+        if diff_check.returncode == 0:
+            print("  [GIT] No staged changes — skipping commit.")
+            return
+
+        # Commit
+        commit_msg = f"chore: update vault {date_str} {datetime.now().strftime('%H:%M')}"
+        commit_result = run_git("commit", "-m", commit_msg)
+        if commit_result.returncode != 0:
+            print(f"  [ERROR] git commit failed: {commit_result.stderr.strip()}")
+            return
+        print(f"  [GIT] Committed: {commit_msg}")
+
+        # Push
+        push_result = run_git("push", "origin")
+        if push_result.returncode != 0:
+            print(f"  [ERROR] git push failed: {push_result.stderr.strip()}")
+            return
+        print("  [GIT] Pushed to origin.")
+
+    except subprocess.TimeoutExpired:
+        print("  [ERROR] git operation timed out.")
+    except Exception as e:
+        print(f"  [ERROR] commit_and_push_vault failed: {e}")
+
+
 def append_daily_summary(saved_items, vault_path, date_str):
     inbox_dir = Path(vault_path) / "inbox"
     inbox_dir.mkdir(parents=True, exist_ok=True)
@@ -400,6 +452,8 @@ def main():
     state["seen_ids"] = new_seen_ids
     state["last_run"] = datetime.now(timezone.utc).isoformat()
     save_state(state, state_path)
+
+    commit_and_push_vault(script_dir, vault_path, date_str)
 
     print(f"\nDone. Collected: {len(new_items)}, Evaluated: {evaluated}, Saved: {saved_count}")
 
